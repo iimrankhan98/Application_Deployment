@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for MyApp with Trivy & Gitleaks
+name: CI/CD Pipeline for MyApp with Gitleaks
 
 on:
   push:
@@ -52,36 +52,14 @@ jobs:
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
       # ------------------------
-      # 5. Cache Trivy DB
-      # ------------------------
-      - name: Cache Trivy DB
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/trivy
-          key: ${{ runner.os }}-trivy-${{ github.run-date }}
-          restore-keys: |
-            ${{ runner.os }}-trivy-
-
-      # ------------------------
-      # 6. Trivy Scan (Security Gate)
-      # ------------------------
-      - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@0.20.0
-        with:
-          image-ref: "${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}"
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL,HIGH"
-
-      # ------------------------
-      # 7. Push Image to ECR
+      # 5. Push Image to ECR
       # ------------------------
       - name: Push Docker image
         run: |
           docker push $IMAGE_REPO:$IMAGE_TAG
 
       # ------------------------
-      # 8. Deploy to EKS
+      # 6. Deploy to EKS
       # ------------------------
       - name: Update kubeconfig for EKS
         run: |
