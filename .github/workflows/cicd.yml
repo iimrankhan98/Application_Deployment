@@ -1,10 +1,9 @@
-name: CI/CD Pipeline for Flask App with Trivy & Gitleaks
+name: CI/CD Pipeline for MyApp with Trivy & Gitleaks
 
 on:
   push:
     branches:
-      - master
-  workflow_dispatch:
+      - master   # trigger on push to master branch
 
 jobs:
   build-and-deploy:
@@ -46,7 +45,7 @@ jobs:
       # ------------------------
       - name: Build Docker image
         run: |
-          IMAGE_REPO="154166281381.dkr.ecr.ap-south-1.amazonaws.com/flask-app"
+          IMAGE_REPO="154166281381.dkr.ecr.ap-south-1.amazonaws.com/myapp"
           IMAGE_TAG=${{ github.run_number }}
           docker build -t $IMAGE_REPO:$IMAGE_TAG .
           echo "IMAGE_REPO=$IMAGE_REPO" >> $GITHUB_ENV
@@ -82,4 +81,4 @@ jobs:
           # Replace image tag in manifest dynamically
           sed -i "s|IMAGE_PLACEHOLDER|${IMAGE_REPO}:${IMAGE_TAG}|g" k8s/deployment.yaml
           kubectl apply -f k8s/deployment.yaml
-          kubectl rollout status deployment/flask-app
+          kubectl rollout status deployment/myapp
