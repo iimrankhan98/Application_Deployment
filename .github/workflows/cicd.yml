@@ -3,7 +3,7 @@ name: CI/CD Pipeline for Flask App with Trivy
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
