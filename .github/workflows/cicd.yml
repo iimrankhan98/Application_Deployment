@@ -1,1 +1,48 @@
+name: CI/CD Pipeline for Flask App
 
+on:
+  push:
+    branches:
+      - main   # trigger on push to main
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Configure AWS Credentials (use GitHub Secrets)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  # change to your region
+
+      # Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        run: |
+          aws ecr get-login-password --region us-east-1 | \
+          docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+
+      # Build & Push Docker image
+      - name: Build and Push Docker image
+        run: |
+          IMAGE_REPO="<AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/flask-app"
+          IMAGE_TAG=latest
+          docker build -t $IMAGE_REPO:$IMAGE_TAG .
+          docker push $IMAGE_REPO:$IMAGE_TAG
+
+      # Update kubeconfig for EKS
+      - name: Update kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --name myapp-cluster --region us-east-1
+
+      # Deploy to EKS
+      - name: Deploy to EKS
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl rollout status deployment/flask-app
