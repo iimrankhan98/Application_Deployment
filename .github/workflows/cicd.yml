@@ -1,9 +1,9 @@
-name: CI/CD Pipeline for Flask App
+name: CI/CD Pipeline for Flask App with Trivy
 
 on:
   push:
     branches:
-      - main   # trigger on push to main
+      - main
 
 jobs:
   build-and-deploy:
@@ -13,27 +13,41 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Configure AWS Credentials (use GitHub Secrets)
+      # Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # change to your region
+          aws-region: us-east-1
 
       # Login to Amazon ECR
       - name: Login to Amazon ECR
-        id: login-ecr
         run: |
           aws ecr get-login-password --region us-east-1 | \
           docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 
-      # Build & Push Docker image
-      - name: Build and Push Docker image
+      # Build Docker image
+      - name: Build Docker image
         run: |
           IMAGE_REPO="<AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/flask-app"
           IMAGE_TAG=latest
           docker build -t $IMAGE_REPO:$IMAGE_TAG .
+          echo "IMAGE_REPO=$IMAGE_REPO" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      # Trivy Scan (Security Gate)
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: "${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}"
+          format: "table"
+          exit-code: "1"       # fail job if vulnerabilities found
+          severity: "CRITICAL,HIGH"
+
+      # Push Docker image (only if scan passed)
+      - name: Push Docker image
+        run: |
           docker push $IMAGE_REPO:$IMAGE_TAG
 
       # Update kubeconfig for EKS
