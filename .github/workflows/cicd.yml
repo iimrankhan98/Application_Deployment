@@ -27,7 +27,7 @@ jobs:
           aws ecr get-login-password --region us-east-1 | \
           docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 
-      # Build Docker image
+      # Build Docker images
       - name: Build Docker image
         run: |
           IMAGE_REPO="<AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/flask-app"
