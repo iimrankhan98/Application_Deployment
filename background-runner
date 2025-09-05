@@ -1,0 +1,8 @@
+# Install the runner as a service
+sudo ./svc.sh install
+
+# Start the runner service
+sudo ./svc.sh start
+
+# Check status
+sudo ./svc.sh status
